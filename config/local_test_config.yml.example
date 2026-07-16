@@ -1,0 +1,94 @@
+study_name: CALERIE_TEST
+
+paths:
+  idat_dir: ../Data/IDATs
+  sample_sheet: ../Data/calerie_samplesheet_subset_for_testing.csv
+  output_dir: Output
+  probe_list_dir: ../Data/Other
+
+sample_sheet:
+  sample_id_col: barcode
+  basename_col: barcode
+  sentrix_id_col: Sentrix_ID
+  sentrix_position_col: Sentrix_Position
+  recursive_idat_search: true
+
+chunking:
+  enabled: true
+  n_chunks: 2
+  grouping_cols:
+    - Participant_ID
+  seed: 123
+
+qc_thresholds:
+  detection_p_threshold: 0.05
+  detection_p_fail_fraction: 0.01
+  bead_min_count: 5
+  bead_fail_fraction: 0.05
+  mean_bead_threshold: 2
+  signal_intensity_threshold: 10.5
+  bisulfite_conversion_threshold: 80
+  control_pca_variance_threshold: 0.90
+  snp_outlier_threshold: 4
+
+ewas_tools_qc:
+  run: true
+  required: true
+
+sample_filtering:
+  standard_metrics:
+    signal_quality: true
+    beadcount: true
+    bisulfite_conversion: true
+    detection_p: true
+    snp_outlier: true
+    sex_mismatch: false
+  ewas_tools_metrics:
+    Restoration: true
+    Staining Green: true
+    Staining Red: true
+    Extension Green: true
+    Extension Red: true
+    Hybridization High/Medium: true
+    Hybridization Medium/Low: true
+    Target Removal 1: true
+    Target Removal 2: true
+    Bisulfite Conversion I Green: true
+    Bisulfite Conversion I Red: true
+    Bisulfite Conversion II: true
+    Specificity I Green: true
+    Specificity I Red: true
+    Specificity II: true
+    Non-polymorphic Green: true
+    Non-polymorphic Red: true
+
+normalization:
+  noob: true
+
+noob_downstream:
+  cell_counts: true
+  pc_clocks: false
+  dunedinpace: false
+
+probe_filtering:
+  array_type: EPICv1
+  remove_snp_probes: true
+  remove_cross_reactive: true
+  remove_polymorphic: true
+  remove_xy: true
+  remove_failed_detection: true
+  remove_failed_beadcount: true
+  bead_min_count: 3
+  bead_fail_fraction: 0.05
+  detection_p_threshold: 0.05
+  detection_p_fail_fraction: 0.01
+  cross_reactive_files:
+    epic_pidsley: 13059_2016_1066_MOESM1_ESM.csv
+    epic_mccartney_cpg: 1-s2.0-S221359601630071X-mmc2.txt
+    epic_mccartney_noncpg: 1-s2.0-S221359601630071X-mmc3.txt
+    k450_chen: 48639-non-specific-probes-Illumina450k.csv
+    k450_benton: HumanMethylation450_15017482_v.1.1_hg19_bowtie_multimap.txt
+
+bmiq:
+  run_explicitly: true
+  n_cores: 1

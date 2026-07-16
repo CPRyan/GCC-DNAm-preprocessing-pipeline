@@ -1,0 +1,16 @@
+Data/
+Output/
+local_data/
+local_test_config.yml
+*.idat
+*.rds
+*.RDS
+*.RData
+*.RDataTmp
+*.csv.gz
+*.tar.gz
+.Rhistory
+.RData
+.DS_Store
+renv/library/
+renv/staging/
