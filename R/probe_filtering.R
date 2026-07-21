@@ -19,7 +19,7 @@ cross_reactive_probe_ids <- function(config) {
   opts <- config$probe_filtering %||% list()
   array_type <- tolower(opts$array_type %||% "EPICv1")
   files <- opts$cross_reactive_files %||% list()
-  probe_dir <- config_path(config, config$paths$probe_list_dir %||% "data-raw/probe_lists")
+  probe_dir <- config_path(config, config$paths$probe_list_dir %||% "data/probe_lists")
 
   if (array_type %in% c("epic", "epicv1", "850k", "epic_v1")) {
     unique(c(

@@ -327,9 +327,11 @@ probe_filtering:
   detection_p_fail_fraction: 0.01
 ```
 
-For EPICv1 arrays, the pipeline can use Pidsley and McCartney probe
-lists. For 450k arrays, it can use Chen and Benton lists. The config
-stores the expected filenames under `probe_filtering.cross_reactive_files`.
+For EPICv1 arrays, the pipeline includes Pidsley and McCartney probe
+lists under `data/probe_lists/`. For 450k arrays, the config includes
+expected Chen and Benton filenames, but those source files still need to
+be added if running 450k data. The bespoke `ReliableProbeList.csv` is not
+included or used by this pipeline.
 
 ## Analysis Methods
 

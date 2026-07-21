@@ -24,6 +24,10 @@ EWAS tools control-metric QC is implemented locally in `R/ewas_tools_qc.R`. It u
 
 Local test IDATs can be referenced by `config/local_test_config.yml`, but that file and all IDAT data are ignored by git.
 
+## Probe Lists
+
+The shareable EPIC probe-list files from the original `Data/Other/` directory are now bundled under `data/probe_lists/`. `ReliableProbeList.csv` is intentionally excluded because it is bespoke and not part of the standard shareable pipeline.
+
 ## Smoke Test Status
 
 - `scripts/00_validate_inputs.R --config=config/local_test_config.yml.example` succeeded on the local 24-sample test dataset.

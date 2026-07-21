@@ -24,3 +24,7 @@
 
 - `DunedinPACE`
 - PC clock repositories/functions
+
+## Bundled Data
+
+EPICv1 probe-list files used for cross-reactive/polymorphic probe filtering are included under `data/probe_lists/`.

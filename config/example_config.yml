@@ -4,7 +4,7 @@ paths:
   idat_dir: Data/IDATs
   sample_sheet: Data/sample_sheet.csv
   output_dir: Output
-  probe_list_dir: data-raw/probe_lists
+  probe_list_dir: data/probe_lists
 
 sample_sheet:
   sample_id_col: IDATid

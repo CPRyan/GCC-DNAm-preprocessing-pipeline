@@ -45,7 +45,8 @@ dnam_pipeline_clean/
 ├── R/
 ├── scripts/
 ├── docs/
-└── data-raw/
+└── data/
+    └── probe_lists/
 ```
 
 ## Output Naming

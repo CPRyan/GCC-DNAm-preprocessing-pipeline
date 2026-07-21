@@ -4,7 +4,7 @@ paths:
   idat_dir: ../Data/IDATs
   sample_sheet: ../Data/calerie_samplesheet_subset_for_testing.csv
   output_dir: Output
-  probe_list_dir: ../Data/Other
+  probe_list_dir: data/probe_lists
 
 sample_sheet:
   sample_id_col: barcode

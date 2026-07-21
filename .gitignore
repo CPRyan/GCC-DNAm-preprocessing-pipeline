@@ -1,4 +1,7 @@
 Data/
+!/data/
+!/data/probe_lists/
+!/data/probe_lists/**
 Output/
 local_data/
 local_test_config.yml

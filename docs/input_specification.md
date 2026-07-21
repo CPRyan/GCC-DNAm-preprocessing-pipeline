@@ -17,3 +17,8 @@ The basename should match IDAT filenames without `_Red.idat` or `_Grn.idat`.
 ## Recursive IDAT Search
 
 If `sample_sheet.recursive_idat_search` is `true`, IDATs may be nested in subdirectories under `paths.idat_dir`.
+
+## Probe Lists
+
+EPICv1 cross-reactive/polymorphic probe lists are bundled in `data/probe_lists/`.
+The bespoke `ReliableProbeList.csv` is intentionally not included or used.
