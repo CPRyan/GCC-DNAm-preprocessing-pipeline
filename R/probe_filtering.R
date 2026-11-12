@@ -17,11 +17,12 @@ read_probe_vector <- function(file, column = NULL, header = TRUE) {
 
 cross_reactive_probe_ids <- function(config) {
   opts <- config$probe_filtering %||% list()
-  array_type <- tolower(opts$array_type %||% "EPICv1")
+  # EDIT 1a: default is now EPICv2
+  array_type <- tolower(opts$array_type %||% "EPICv2")
   files <- opts$cross_reactive_files %||% list()
   probe_dir <- config_path(config, config$paths$probe_list_dir %||% "data/probe_lists")
-
-  if (array_type %in% c("epic", "epicv1", "850k", "epic_v1")) {
+  
+  if (array_type %in% c("epic", "epicv1", "850k", "epic_v1", "epicv2", "epic_v2")) {
     unique(c(
       read_probe_vector(file.path(probe_dir, files$epic_pidsley %||% "13059_2016_1066_MOESM1_ESM.csv")),
       read_probe_vector(file.path(probe_dir, files$epic_mccartney_cpg %||% "1-s2.0-S221359601630071X-mmc2.txt"), header = FALSE),
@@ -39,7 +40,14 @@ cross_reactive_probe_ids <- function(config) {
 
 filter_good_beadcount_probes <- function(rgset, probes, bead_min_count = 3, bead_fail_fraction = 0.05) {
   nbeads <- extract_nbeads_matrix(rgset)
+  n_requested <- length(probes)
   probes <- intersect(probes, rownames(nbeads))
+  # EDIT 3: warn if the bead-count rownames do not match the GRset (e.g. missing v2 suffixes)
+  if (length(probes) < 0.5 * n_requested) {
+    warning("Bead count matrix matches only ", length(probes), " of ", n_requested,
+            " probes; check that its rownames carry the EPICv2 suffixes (e.g. cgXXXX_TC11).",
+            call. = FALSE)
+  }
   nbeads <- nbeads[probes, , drop = FALSE]
   keep <- rowMeans(is.na(nbeads) | nbeads < bead_min_count, na.rm = TRUE) <= bead_fail_fraction
   names(keep)[keep]
@@ -57,7 +65,7 @@ filter_good_detection_probes <- function(rgset, probes, detection_p_threshold = 
 record_probe_attrition <- function(config, chunk, attrition) {
   out_csv <- study_file(config, "probe_filter_attrition", chunk = chunk, ext = "csv")
   utils::write.csv(attrition, out_csv, row.names = FALSE)
-
+  
   if (requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("scales", quietly = TRUE)) {
     attrition$filter <- factor(attrition$filter, levels = rev(attrition$filter))
     p <- ggplot2::ggplot(attrition) +
@@ -78,7 +86,7 @@ record_probe_attrition <- function(config, chunk, attrition) {
       height = 8
     )
   }
-
+  
   invisible(out_csv)
 }
 
@@ -99,7 +107,14 @@ probe_filter_chunk <- function(config, chunk) {
   opts <- config$probe_filtering %||% list()
   grset <- readRDS(noob_grset_file(config, chunk))
   rgset <- readRDS(good_rgset_file(config, chunk))
-
+  
+  # EDIT 4: judge probes only on the samples that are in the analysis
+  common <- intersect(colnames(grset), colnames(rgset))
+  if (!length(common)) stop("No shared sample names between GRset and RGset for chunk ", chunk)
+  message("Probe filtering: ", length(common), " samples (GRset ", ncol(grset),
+          ", RGset ", ncol(rgset), ")")
+  rgset <- rgset[, common]
+  
   grset <- minfi::mapToGenome(grset)
   annotation <- minfi::getAnnotation(grset)
   current_n <- nrow(grset)
@@ -109,24 +124,34 @@ probe_filter_chunk <- function(config, chunk) {
     probes_removed = 0,
     stringsAsFactors = FALSE
   )
-
+  
   if (isTRUE(opts$remove_snp_probes)) {
     before <- nrow(grset)
-    grset <- minfi::dropLociWithSnps(grset, snps = c("CpG", "SBE"), maf = 0, snpAnno = NULL)
+    # EDIT 2: dropLociWithSnps needs SNP columns in the array annotation; check they are filled
+    si <- as.data.frame(minfi::getSnpInfo(grset))
+    snp_cols <- intersect(c("CpG_rs", "CpG_maf", "SBE_rs", "SBE_maf"), colnames(si))
+    if (!length(snp_cols) || all(colSums(!is.na(si[, snp_cols, drop = FALSE])) == 0)) {
+      warning("Array annotation has no SNP information; SNP probe filter skipped. ",
+              "Use an external SNP/probe mask instead.", call. = FALSE)
+    } else {
+      grset <- minfi::dropLociWithSnps(grset, snps = c("CpG", "SBE"), maf = 0, snpAnno = NULL)
+    }
     attrition <- add_attrition_step(attrition, "Remove CpG/SBE SNP probes", before, nrow(grset))
   }
-
+  
   if (isTRUE(opts$remove_cross_reactive) || isTRUE(opts$remove_polymorphic)) {
     before <- nrow(grset)
     cr_probes <- cross_reactive_probe_ids(config)
     if (!length(cr_probes)) {
       warning("No cross-reactive/polymorphic probe list files were found; skipping this filter.", call. = FALSE)
     } else {
-      grset <- grset[!rownames(grset) %in% cr_probes, ]
+      # EDIT 1b: v2 rownames carry replicate suffixes (cgXXXX_TC11); the lists use plain IDs
+      base_id <- sub("_.*$", "", rownames(grset))
+      grset <- grset[!base_id %in% cr_probes, ]
     }
     attrition <- add_attrition_step(attrition, "Remove cross-reactive/polymorphic probes", before, nrow(grset))
   }
-
+  
   if (isTRUE(opts$remove_xy)) {
     before <- nrow(grset)
     annotation <- minfi::getAnnotation(grset)
@@ -135,7 +160,7 @@ probe_filter_chunk <- function(config, chunk) {
     grset <- grset[!rownames(grset) %in% xy_probes, ]
     attrition <- add_attrition_step(attrition, "Remove XY probes", before, nrow(grset))
   }
-
+  
   if (isTRUE(opts$remove_failed_beadcount)) {
     before <- nrow(grset)
     good <- filter_good_beadcount_probes(
@@ -147,7 +172,7 @@ probe_filter_chunk <- function(config, chunk) {
     grset <- grset[rownames(grset) %in% good, ]
     attrition <- add_attrition_step(attrition, "Remove beadcount-failed probes", before, nrow(grset))
   }
-
+  
   if (isTRUE(opts$remove_failed_detection)) {
     before <- nrow(grset)
     good <- filter_good_detection_probes(
@@ -159,7 +184,7 @@ probe_filter_chunk <- function(config, chunk) {
     grset <- grset[rownames(grset) %in% good, ]
     attrition <- add_attrition_step(attrition, "Remove detection-P-failed probes", before, nrow(grset))
   }
-
+  
   record_probe_attrition(config, chunk, attrition)
   saveRDS(grset, probe_filtered_grset_file(config, chunk))
   invisible(probe_filtered_grset_file(config, chunk))

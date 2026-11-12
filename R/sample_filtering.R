@@ -35,22 +35,26 @@ selected_filter_columns <- function(config, pass_fail) {
   unique(selected)
 }
 
+# One list entry per row: the names of the columns that failed (character(0) if none).
+# Tests each column in its own type, and always returns one entry per sample.
+failed_names <- function(df) {
+  failed <- lapply(df, qc_value_failed)
+  lapply(seq_len(nrow(df)), function(i) {
+    colnames(df)[vapply(failed, function(f) f[[i]], logical(1))]
+  })
+}
+
 apply_sample_filtering <- function(config, chunk) {
   pass_fail <- utils::read.csv(qc_pass_fail_file(config, chunk), stringsAsFactors = FALSE, check.names = FALSE)
   selected_cols <- selected_filter_columns(config, pass_fail)
   if (!"sample_id" %in% colnames(pass_fail)) {
     stop("Pass/fail table is missing sample_id.", call. = FALSE)
   }
-
-  failed_detected <- apply(pass_fail[, setdiff(colnames(pass_fail), c("sample_id", "Basename", "chunk")), drop = FALSE], 1, function(row) {
-    names(row)[qc_value_failed(row)]
-  })
-  failed_used <- if (length(selected_cols)) {
-    apply(pass_fail[, selected_cols, drop = FALSE], 1, function(row) names(row)[qc_value_failed(row)])
-  } else {
-    vector("list", nrow(pass_fail))
-  }
-
+  
+  detected_cols <- setdiff(colnames(pass_fail), c("sample_id", "Basename", "chunk"))
+  failed_detected <- failed_names(pass_fail[, detected_cols, drop = FALSE])
+  failed_used     <- failed_names(pass_fail[, selected_cols, drop = FALSE])
+  
   decisions <- data.frame(
     sample_id = pass_fail$sample_id,
     failed_metrics_detected = vapply(failed_detected, paste, character(1), collapse = ";"),
@@ -63,6 +67,7 @@ apply_sample_filtering <- function(config, chunk) {
 }
 
 save_good_sample_rgset <- function(config, chunk) {
+  require_package("minfi")
   decisions <- apply_sample_filtering(config, chunk)
   rgset <- readRDS(raw_rgset_file(config, chunk))
   keep <- decisions$sample_id[!decisions$removed_from_pipeline]
