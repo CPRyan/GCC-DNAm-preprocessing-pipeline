@@ -5,7 +5,9 @@ paths:
   sample_sheet: Data/sample_sheet.csv
   output_dir: Output
   probe_list_dir: data/probe_lists
-
+  PCClock_data: data/PCClocks_data.qs2
+  figure_dir: figures
+  
 sample_sheet:
   sample_id_col: IDATid
   basename_col: null
@@ -67,8 +69,8 @@ normalization:
 
 noob_downstream:
   cell_counts: true
-  pc_clocks: false
-  dunedinpace: false
+  pc_clocks: true
+  dunedinpace: true
   sex_col: null
   age_col: null
 

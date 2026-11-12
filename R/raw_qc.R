@@ -11,25 +11,31 @@ ensure_manifest_package <- function(rgset) {
   invisible(TRUE)
 }
 
-calculate_control_probe_pca <- function(rgset, variance_threshold = 0.90, pseudocount = 100) {
+# Edited to compute PCA from ALL control probes (not chunk-specific)
+# Per-chunk step: control-probe "beta" (red / (red + green + pseudocount)).
+# Computed per sample and probe, so chunk results can be stacked safely.
+extract_control_beta <- function(rgset, pseudocount = 100) {
   require_package("minfi")
   ensure_manifest_package(rgset)
-  control_probes <- minfi::getControlAddress(rgset)
-  control_probes <- intersect(control_probes, rownames(minfi::getRed(rgset)))
+  red_all <- minfi::getRed(rgset)
+  control_probes <- intersect(minfi::getControlAddress(rgset), rownames(red_all))
   if (!length(control_probes)) {
     stop("No control probes were found in the RGset.", call. = FALSE)
   }
-
-  red <- minfi::getRed(rgset)[control_probes, , drop = FALSE]
+  red <- red_all[control_probes, , drop = FALSE]
   green <- minfi::getGreen(rgset)[control_probes, , drop = FALSE]
-  control_beta <- red / (red + green + pseudocount)
+  red / (red + green + pseudocount)
+}
+
+# Merged step: probe filtering, PCA and variance cutoff on the combined matrix.
+calculate_control_probe_pca_from_beta <- function(control_beta, variance_threshold = 0.90) {
   keep_probe <- apply(control_beta, 1, function(x) all(is.finite(x)) && stats::sd(x) > 0)
   control_beta <- control_beta[keep_probe, , drop = FALSE]
   pca_result <- stats::prcomp(t(control_beta), center = TRUE, scale. = TRUE)
   variance_explained <- pca_result$sdev^2 / sum(pca_result$sdev^2)
   cumulative_variance_explained <- cumsum(variance_explained)
   cutoff <- which(cumulative_variance_explained >= variance_threshold)[[1]]
-
+  
   list(
     scores = data.frame(sample_id = rownames(pca_result$x), pca_result$x[, seq_len(cutoff), drop = FALSE], check.names = FALSE),
     variance = data.frame(
@@ -43,28 +49,46 @@ calculate_control_probe_pca <- function(rgset, variance_threshold = 0.90, pseudo
   )
 }
 
-extract_nbeads_matrix <- function(rgset) {
+# Single-RGset version, kept so any other caller still works.
+calculate_control_probe_pca <- function(rgset, variance_threshold = 0.90, pseudocount = 100) {
+  calculate_control_probe_pca_from_beta(extract_control_beta(rgset, pseudocount), variance_threshold)
+}
+
+extract_nbeads_matrix <- function(rgset) { # Edited Paolo: watermelon::beadcount(rgset) needs to get the CpG IDs (cg.....) from rgset rownames 
   require_package("Biobase")
+  is_cg_indexed <- function(x) length(x) > 0 && any(grepl("^cg", x))
+  
+  if (requireNamespace("wateRmelon", quietly = TRUE)) {
+    nbeads <- try(wateRmelon::beadcount(rgset), silent = TRUE)
+    if (!inherits(nbeads, "try-error") && is_cg_indexed(rownames(nbeads))) {
+      stripped <- sub("^X", "", colnames(nbeads))
+      if (!identical(stripped, colnames(rgset))) {
+        stop("beadcount() column names don't correspond to rgset samples after stripping 'X' prefix — cannot safely realign.", call. = FALSE)
+      }
+      colnames(nbeads) <- colnames(rgset) # beadcount() mangles digit-leading sample IDs with a leading "X"
+      return(nbeads)
+    }
+  }
   if ("getNBeads" %in% getNamespaceExports("minfi")) {
     nbeads <- try(minfi::getNBeads(rgset), silent = TRUE)
-    if (!inherits(nbeads, "try-error")) {
+    if (!inherits(nbeads, "try-error") && is_cg_indexed(rownames(nbeads))) {
       return(nbeads)
     }
   }
   assay_elements <- Biobase::assayDataElementNames(rgset)
   if ("NBeads" %in% assay_elements) {
-    return(Biobase::assayDataElement(rgset, "NBeads"))
+    nbeads <- Biobase::assayDataElement(rgset, "NBeads")
+    if (is_cg_indexed(rownames(nbeads))) {
+      return(nbeads)
+    }
   }
-  if (requireNamespace("wateRmelon", quietly = TRUE)) {
-    return(wateRmelon::beadcount(rgset))
-  }
-  stop("Could not extract bead counts. Load IDATs with extended = TRUE, or install wateRmelon.", call. = FALSE)
+  stop("Could not extract a cg-indexed bead count matrix (got address-indexed rows instead). Try installing wateRmelon, or loading IDATs with extended = TRUE.", call. = FALSE)
 }
 
 calculate_bead_metrics <- function(rgset, bead_min_count = 5, bead_fail_fraction = 0.05, mean_bead_threshold = 2) {
   nbeads <- extract_nbeads_matrix(rgset)
   mean_bead_count <- colMeans(nbeads, na.rm = TRUE)
-  fraction_low <- colMeans(nbeads < bead_min_count, na.rm = TRUE)
+  fraction_low <- colMeans(is.na(nbeads) | nbeads < bead_min_count) # wateRmelon::beadcount() sets counts < 3 to NA, so treat NA as low
   data.frame(
     sample_id = names(mean_bead_count),
     mean_beadcount = as.numeric(mean_bead_count),
@@ -125,7 +149,7 @@ run_raw_qc_for_rgset <- function(config, rgset) {
     detection_p_threshold = thresholds$detection_p_threshold %||% 0.05,
     detection_p_fail_fraction = thresholds$detection_p_fail_fraction %||% 0.01
   )
-  control_pca <- calculate_control_probe_pca(rgset, thresholds$control_pca_variance_threshold %||% 0.90)
-
-  list(signal = signal, beads = beads, detection = detection, control_pca = control_pca)
+  
+  control_beta <- extract_control_beta(rgset) # control-probe PCA is no longer done per chunk; only the betas are returned
+  list(signal = signal, beads = beads, detection = detection, control_beta = control_beta)
 }
