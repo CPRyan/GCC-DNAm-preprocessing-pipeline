@@ -985,7 +985,7 @@ rp_qc_signal <- function(d, thr) {
     ggplot2::scale_colour_manual(values = RP_STATUS, drop = FALSE) +
     ggplot2::geom_hline(yintercept = thr, linetype = "dashed", colour = RP$grey, linewidth = 0.4) +
     ggplot2::geom_vline(xintercept = thr, linetype = "dashed", colour = RP$grey, linewidth = 0.4) +
-    ggplot2::labs(title = "Signal intensity", x = "Unmethylated signal (median log2)",
+    ggplot2::labs(title = "Signal intensity (minfi::preprocessRaw)", x = "Unmethylated signal (median log2)",
                   y = "Methylated signal (median log2)") +
     rp_qc_theme()
 }
@@ -1003,15 +1003,15 @@ rp_qc_sex <- function(d) {
   p <- ggplot2::ggplot(d, ggplot2::aes(x = xval, y = yval, colour = sex)) +
     ggplot2::geom_point(size = 1.5) +
     ggplot2::scale_colour_manual(
-      values = c("reported female" = "#CC79A7", "reported male" = "#0072B2", unknown = "#9CA3AF"), name = NULL) +
-    ggplot2::labs(title = "Sex check", x = "X chromosome signal (normalised)",
+      values = c("reported female" = "#8B1A1A", "reported male" = "#0072B2", unknown = "#9CA3AF"), name = NULL) +
+    ggplot2::labs(title = "Sex check (ewastools)", x = "X chromosome signal (normalised)",
                   y = "Y chromosome signal (normalised)") +
     rp_qc_theme() +
     ggplot2::theme(legend.position = "bottom", legend.key.size = grid::unit(8, "pt"),
                    legend.text = ggplot2::element_text(size = 7))
   if (nrow(odd)) {
     p <- p + ggplot2::geom_point(data = odd, ggplot2::aes(x = xval, y = yval), inherit.aes = FALSE,
-                                 shape = 1, size = 4, stroke = 0.8, colour = RP$red)
+                                 shape = 1, size = 4, stroke = 0.8, colour = RP_STATUS[["flagged"]])
   }
   p
 }
@@ -1030,7 +1030,7 @@ rp_qc_pca <- function(pcs, d) {
   ggplot2::ggplot(pcs, ggplot2::aes(x = xval, y = yval, colour = status)) +
     ggplot2::geom_point(size = 1.5) +
     ggplot2::scale_colour_manual(values = RP_STATUS, drop = FALSE) +
-    ggplot2::labs(title = "Control-probe PCA", x = pc[1], y = pc[2]) +
+    ggplot2::labs(title = "Control-probe PCA (stats::prcomp)", x = pc[1], y = pc[2]) +
     rp_qc_theme()
 }
 
@@ -1090,12 +1090,10 @@ rp_page_qcplots <- function(config, nums, page, n_pages) {
   q <- config$qc_thresholds %||% list()
   panels <- list(
     rp_qc_signal(d, q$signal_intensity_threshold %||% 10.5),
-    rp_qc_dot(d, "average_det_pval", "Detection p-value", "Mean detection p-value per sample",
-              subtitle = paste0("A sample fails if more than ", 100 * (q$detection_p_fail_fraction %||% 0.01),
-                                "% of its probes have a p-value above ", q$detection_p_threshold %||% 0.05),
+    rp_qc_dot(d, "average_det_pval", "Detection p-value (minfi::detectionP)", "Mean detection p-value per sample",
               plain_labels = TRUE),
-    rp_qc_dot(d, "mean_beadcount", "Bead count", "Mean bead count per probe", q$mean_bead_threshold %||% 2),
-    rp_qc_dot(d, "snp_outlier_log_odds", "SNP outliers", "SNP outlier score", -(q$snp_outlier_threshold %||% 4)),
+    rp_qc_dot(d, "mean_beadcount", "Bead count (wateRmelon::beadcount)", "Mean bead count per probe", q$mean_bead_threshold %||% 2),
+    rp_qc_dot(d, "snp_outlier_log_odds", "SNP outliers (ewastools)", "SNP outlier score", -(q$snp_outlier_threshold %||% 4)),
     rp_qc_sex(d),
     rp_qc_pca(nums$pca, d_all)
   )
