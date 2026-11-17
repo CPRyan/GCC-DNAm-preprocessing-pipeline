@@ -1,51 +1,75 @@
-study_name: HRS
+# ==============================================================================
+# EXAMPLE CONFIG
+# Copy this file to config/my_study.yml and edit the copy.
+#
+# To start an analysis you only need to set the run name and the three paths below.
+# Everything under "ADVANCED SETTINGS" has working defaults and can be left as it is.
+# ==============================================================================
+
+study_name: Enter_here_your_study_name       # used in the name of every output file
 
 paths:
-  idat_dir: Data/IDATs
-  sample_sheet: Data/sample_sheet.csv
-  output_dir: Output
-  probe_list_dir: data/probe_lists
-  PCClock_data: data/PCClocks_data.qs2
-  figure_dir: figures
-  
+  # Use full paths: no "~" and no relative paths.
+  idat_dir: /full/path/to/idats                  # folder with the .idat files (subfolders are searched)
+  sample_sheet: /full/path/to/sample_sheet.csv   # your sample sheet (columns: see the README)
+  output_dir: /full/path/to/output               # results go here; the subfolders data/, figures/ and logs/ are created for you
+
+
+# ==============================================================================
+# ADVANCED SETTINGS
+# The defaults work for most studies. Change them only if you need to.
+# ==============================================================================
+
+# ---- Column names of your sample sheet -------------------------------------------
 sample_sheet:
-  sample_id_col: IDATid
-  basename_col: null
+  sample_id_col: IDATid                  # unique sample ID (usually Sentrix_ID + "_" + Sentrix_Position)
+  basename_col: null                     # only if your sheet has the IDAT file names; then Sentrix columns are not needed
   sentrix_id_col: Sentrix_ID
   sentrix_position_col: Sentrix_Position
-  recursive_idat_search: true
+  recursive_idat_search: true            # also look for IDATs in subfolders
+  sex_col: Female                        # reported sex for the sex check: 1 = female, 0 = male
+  name_col: Sample_ID                    # required: your ID for each sample, shown next to the IDATid in the logs, the report and the output tables
 
+# ---- Memory: split the samples into chunks if the data do not fit in memory ---------
 chunking:
-  enabled: true
-  n_chunks: 5
-  grouping_cols:
-    - SubjectID
+  n_chunks: 1                            # 1 = no chunking; use 2 or more for large studies
+  grouping_cols:                         # samples with the same value stay in the same chunk
+    - SubjectID                          # no SubjectID in your sheet? delete this line and the one above
   seed: 123
 
+# ---- Which results to calculate on the Noob-normalized data -------------------------
+noob_downstream:
+  cell_counts: true
+  cell_reference: FlowSorted.Blood.EPIC  # or FlowSorted.BloodExtended.EPIC (restricted access)
+  pc_clocks: true
+  systems_age: true
+  dunedinpace: true
+
+# ---- Sample QC thresholds ------------------------------------------------------------
 qc_thresholds:
-  detection_p_threshold: 0.05
-  detection_p_fail_fraction: 0.01
-  bead_min_count: 5
-  bead_fail_fraction: 0.05
-  mean_bead_threshold: 2
-  signal_intensity_threshold: 10.5
-  bisulfite_conversion_threshold: 80
-  control_pca_variance_threshold: 0.90
-  snp_outlier_threshold: 4
+  detection_p_threshold: 0.05            # a probe is "not detected" above this p-value
+  detection_p_fail_fraction: 0.01        # a sample fails if more than 1% of its probes are not detected
+  bead_min_count: 5                      # a probe has too few beads below this count
+  bead_fail_fraction: 0.05               # a sample fails if more than 5% of its probes have too few beads
+  mean_bead_threshold: 2                 # a sample also fails if its mean bead count is this low or lower
+  signal_intensity_threshold: 10.5       # a sample fails if its median log2 methylated or unmethylated signal is lower
+  control_pca_variance_threshold: 0.90   # control-probe PCA: keep the PCs that explain this share of the variance
+  snp_outlier_threshold: 4               # a sample is flagged if its SNP outlier score is above -4
 
 ewas_tools_qc:
-  run: true
-  required: true
+  run: true                              # must stay true: the EWAS tools control metrics are mandatory
 
+# ---- Which failed checks remove a sample ------------------------------------------------
+# Set a check to false to still record it, but not remove samples because of it.
+# A check that is false is a flag: the samples that fail it are listed in the log and the report, and kept.
 sample_filtering:
   standard_metrics:
     signal_quality: true
     beadcount: true
-    bisulfite_conversion: true
     detection_p: true
-    snp_outlier: true
-    sex_mismatch: false
-  ewas_tools_metrics:
+    snp_outlier: true                    # check possible contamination or failed sample
+    sex_mismatch: false                  # false = flag only, the sample is kept; true = flag and remove
+  ewas_tools_metrics:                    # Illumina control metrics; they include bisulfite conversion
     Restoration: true
     Staining Green: true
     Staining Red: true
@@ -64,35 +88,40 @@ sample_filtering:
     Non-polymorphic Green: true
     Non-polymorphic Red: true
 
-normalization:
-  noob: true
-
-noob_downstream:
-  cell_counts: true
-  pc_clocks: true
-  dunedinpace: true
-  sex_col: null
-  age_col: null
-
+# ---- Probe filtering ----------------------------------------------------------------------
 probe_filtering:
-  array_type: EPICv1
   remove_snp_probes: true
   remove_cross_reactive: true
   remove_polymorphic: true
-  remove_xy: true
+  remove_xy: true                        # set to false if you analyse the sex chromosomes (e.g. sex-specific cohort)
   remove_failed_detection: true
   remove_failed_beadcount: true
   bead_min_count: 3
-  bead_fail_fraction: 0.05
+  bead_fail_fraction: 0.05               # judged on the samples of each chunk
   detection_p_threshold: 0.05
-  detection_p_fail_fraction: 0.01
-  cross_reactive_files:
+  detection_p_fail_fraction: 0.01        # judged on the samples of each chunk
+  cross_reactive_files:                  # probe lists in data/probe_lists/
     epic_pidsley: 13059_2016_1066_MOESM1_ESM.csv
     epic_mccartney_cpg: 1-s2.0-S221359601630071X-mmc2.txt
     epic_mccartney_noncpg: 1-s2.0-S221359601630071X-mmc3.txt
     k450_chen: 48639-non-specific-probes-Illumina450k.csv
     k450_benton: HumanMethylation450_15017482_v.1.1_hg19_bowtie_multimap.txt
 
+# ---- BMIQ normalization ---------------------------------------------------------------------
 bmiq:
-  run_explicitly: true
-  n_cores: 1
+  n_cores: 1                             # BMIQ is the slowest step; more cores make it faster (Linux and Mac)
+  verbose: true                          # false = one short line per sample in the log
+
+# ---- After BMIQ: FraminghamPACE, report and figures -------------------------------------------
+bmiq_downstream:
+  framinghampace: true                   # run FraminghamPACE (ElasticNet and Ridge) on the BMIQ betas
+  report: true                           # write the PDF report and the methods summary text file
+  derived_matrices: true                 # save the BMIQ beta and M value matrices in Derived_Variables (large files)
+  plots:                                 # each plot can be switched off; `plots: false` switches all off
+    cell_counts: true                    # boxplots of the cell counts
+    pc_clocks: true                      # PC clocks vs chronological age
+    systems_age: true                    # SystemsAge scores vs chronological age
+    pace_distribution: true              # histograms of the pace scores
+    pace_by_sex: true                    # pace scores by sex
+    beta_distribution: true              # density of the BMIQ betas
+    m_distribution: true                 # density of the M values

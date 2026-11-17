@@ -1,7 +1,7 @@
 read_illumina_sample_sheet <- function(sample_sheet) {
   lines <- readLines(sample_sheet, warn = FALSE)
   data_line <- grep("^\\[Data\\]", trimws(lines))
-
+  
   if (length(data_line)) {
     csv_text <- paste(lines[(data_line[[1]] + 1):length(lines)], collapse = "\n")
     sample_sheet_data <- utils::read.csv(
@@ -20,7 +20,7 @@ read_illumina_sample_sheet <- function(sample_sheet) {
       na.strings = c("", "NA")
     )
   }
-
+  
   sample_sheet_data <- sample_sheet_data[rowSums(!is.na(sample_sheet_data)) > 0, , drop = FALSE]
   rownames(sample_sheet_data) <- NULL
   sample_sheet_data
@@ -45,7 +45,7 @@ add_idat_basenames <- function(sample_sheet_data,
   if (!length(idat_map)) {
     stop("No paired Red/Grn IDAT files were found in: ", idat_dir, call. = FALSE)
   }
-
+  
   if (!is.null(basename_col) && nzchar(basename_col)) {
     if (!basename_col %in% colnames(sample_sheet_data)) {
       stop("Sample sheet is missing basename column: ", basename_col, call. = FALSE)
@@ -59,7 +59,7 @@ add_idat_basenames <- function(sample_sheet_data,
     }
     basename_key <- paste0(sample_sheet_data[[sentrix_id_col]], "_", sample_sheet_data[[sentrix_position_col]])
   }
-
+  
   basename_key <- sub("_Red[.]idat$", "", basename_key)
   basename_key <- sub("_Grn[.]idat$", "", basename_key)
   basename_key <- basename(basename_key)
@@ -71,7 +71,7 @@ validate_idat_pairs <- function(sample_sheet_data) {
   if (!"Basename" %in% colnames(sample_sheet_data)) {
     stop("Sample sheet data must contain a Basename column.", call. = FALSE)
   }
-
+  
   sample_sheet_data$Red_IDAT <- paste0(sample_sheet_data$Basename, "_Red.idat")
   sample_sheet_data$Green_IDAT <- paste0(sample_sheet_data$Basename, "_Grn.idat")
   sample_sheet_data$red_idat_exists <- file.exists(sample_sheet_data$Red_IDAT)
@@ -84,7 +84,7 @@ load_and_validate_manifest <- function(config) {
   sample_sheet_file <- config_path(config, config$paths$sample_sheet)
   idat_dir <- config_path(config, config$paths$idat_dir)
   ss <- config$sample_sheet
-
+  
   manifest <- read_illumina_sample_sheet(sample_sheet_file)
   manifest <- add_idat_basenames(
     manifest,
@@ -95,11 +95,25 @@ load_and_validate_manifest <- function(config) {
     recursive = isTRUE(ss$recursive_idat_search)
   )
   manifest <- validate_idat_pairs(manifest)
-
+  
   if (!ss$sample_id_col %in% colnames(manifest)) {
     stop("Sample sheet is missing sample ID column: ", ss$sample_id_col, call. = FALSE)
   }
-
+  
+  # the name column is required: it is shown next to the IDATid in the logs and the report
+  name_col <- name_column(config)
+  if (!name_col %in% colnames(manifest)) {
+    stop("Sample sheet is missing the sample name column: ", name_col, ". It holds a name or ID of ",
+         "each sample and is shown next to the IDATid in the logs and the report. Add it ",
+         "(as the first column), or set sample_sheet: name_col in the config.", call. = FALSE)
+  }
+  blank <- is.na(manifest[[name_col]]) | !nzchar(trimws(as.character(manifest[[name_col]])))
+  if (any(blank)) {
+    warning(sum(blank), " sample(s) have an empty ", name_col, ", for example ",
+            paste(utils::head(as.character(manifest[[ss$sample_id_col]])[blank], 3), collapse = ", "),
+            ". Every sample should have one.", call. = FALSE)
+  }
+  
   manifest$sample_id <- make.unique(as.character(manifest[[ss$sample_id_col]]))
   manifest
 }

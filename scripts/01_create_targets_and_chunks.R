@@ -5,7 +5,7 @@ if (any(!manifest$idat_pair_exists)) {
   stop("Cannot create targets until all IDAT pairs exist. Run scripts/00_validate_inputs.R for details.", call. = FALSE)
 }
 
-n_chunks <- if (isTRUE(config$chunking$enabled)) as.integer(config$chunking$n_chunks %||% 1) else 1L
+n_chunks <- as.integer(config$chunking$n_chunks %||% 1)   # 1 = no chunking
 manifest <- create_chunk_assignments(
   manifest,
   n_chunks = n_chunks,
