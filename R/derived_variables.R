@@ -98,3 +98,20 @@ export_bmiq_matrices <- function(config, chunks, suffix = "", max_gb = 6) {
   }
   invisible(written)
 }
+# The control-probe PCA scores (written by step 03 for all samples), with the sample names, for the
+# chunks that were run. The PCA is calculated before samples are removed, so removed samples are included.
+export_control_pca_scores <- function(config, chunks, suffix = "") {
+  src <- study_file(config, "control_probe_pca_scores_all_chunks", ext = "csv")
+  if (!file.exists(src)) {
+    warning("Control-probe PCA scores not found, so not copied to Derived_Variables: ", src, call. = FALSE)
+    return(invisible(NULL))
+  }
+  scores <- utils::read.csv(src, stringsAsFactors = FALSE, check.names = FALSE,
+                            colClasses = c(sample_id = "character"))
+  manifest <- read_chunk_assignments(config)
+  scores <- scores[scores$sample_id %in% manifest$sample_id[manifest$chunk %in% chunks], , drop = FALSE]
+  file <- derived_file(config, "control_probe_pca_scores", suffix)
+  utils::write.csv(add_name_column(config, scores), file, row.names = FALSE)
+  message("Control-probe PCA scores (", nrow(scores), " samples, ", ncol(scores) - 1, " PCs) -> ", basename(file))
+  invisible(file)
+}

@@ -149,9 +149,9 @@ save_good_sample_rgset <- function(config, chunk) {
 # each group; the filtering decisions tables have all of them.
 # Returns the removed samples invisibly.
 # The sample sheet column with a name or ID of the sample, shown next to the IDATid in the
-# logs and the report (sample_sheet: name_col in the config; default Sample_ID)
+# logs and the report (sample_sheet: name_col in the config; default Sample_Name)
 name_column <- function(config) {
-  config$sample_sheet$name_col %||% "Sample_ID"
+  config$sample_sheet$name_col %||% "Sample_Name"
 }
 
 # sample_id -> name, from the sample sheet (NULL if the sheet has no such column)
@@ -162,7 +162,7 @@ sample_name_lookup <- function(config) {
   stats::setNames(as.character(manifest[[col]]), manifest$sample_id)
 }
 
-# For the output tables: the sample name column (Sample_ID) first, then the IDATid, which is
+# For the output tables: the sample name column (Sample_Name) first, then the IDATid, which is
 # written under the name of the sample ID column of the sample sheet instead of "sample_id"
 add_name_column <- function(config, tbl) {
   if (!"sample_id" %in% colnames(tbl)) return(tbl)

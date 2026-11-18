@@ -28,7 +28,7 @@ sample_sheet:
   sentrix_position_col: Sentrix_Position
   recursive_idat_search: true            # also look for IDATs in subfolders
   sex_col: Female                        # reported sex for the sex check: 1 = female, 0 = male
-  name_col: Sample_ID                    # required: your ID for each sample, shown next to the IDATid in the logs, the report and the output tables
+  name_col: Sample_Name                  # required: your name or ID for each sample, shown next to the IDATid in the logs, the report and the output tables
 
 # ---- Memory: split the samples into chunks if the data do not fit in memory ---------
 chunking:

@@ -72,7 +72,7 @@ What the packages are used for:
 Notes:
 
 - **Skipping a result.** If you switch a result off in the config (`noob_downstream` and `bmiq_downstream`), you do not need its package. If a package is missing for a result that is switched on, that module fails with a warning and the other modules still run.
-- **Cell-count reference.** The default is `FlowSorted.Blood.EPIC`. The extended reference needs restricted access; to use it, run `BiocManager::install("FlowSorted.BloodExtended.EPIC")` and set `noob_downstream: cell_reference: FlowSorted.BloodExtended.EPIC` in the config.
+- **Cell-count reference.** The default is `FlowSorted.Blood.EPIC`. The extended reference (12 cell types) is restricted: it needs a licence agreement signed by an authorized representative of your institution (see the LICENSE on the package's GitHub page, github.com/immunomethylomics/FlowSorted.BloodExtended.EPIC). To use it, install it with `remotes::install_github("immunomethylomics/FlowSorted.BloodExtended.EPIC")` and set `noob_downstream: cell_reference: FlowSorted.BloodExtended.EPIC` in the config.
 
 ## Step 2: Prepare your data
 
@@ -89,7 +89,7 @@ Prepare the IDAT files and the sample sheet wherever you like, on your computer 
 
 | Column | Used for | What to put in it |
 |---|---|---|
-| `Sample_ID` | your ID for the sample (for example the participant ID), shown next to the `IDATid` in the logs, the report and the output tables | required; put it in the first column |
+| `Sample_Name` | your name or ID for the sample (for example the participant ID), shown next to the `IDATid` in the logs, the report and the output tables | required; put it in the first column |
 | `Sentrix_ID` | finding the IDAT files | the chip ID, 12 digits, e.g. `203546000006` |
 | `Sentrix_Position` | finding the IDAT files | the position on the chip, e.g. `R01C01` |
 | `IDATid` | the sample ID in all outputs | unique for every sample; usually `Sentrix_ID` + `_` + `Sentrix_Position` |
@@ -102,7 +102,7 @@ Prepare the IDAT files and the sample sheet wherever you like, on your computer 
 An example with three samples:
 
 ```text
-Sample_ID,Sentrix_ID,Sentrix_Position,SubjectID,IDATid,Female,Age
+Sample_Name,Sentrix_ID,Sentrix_Position,SubjectID,IDATid,Female,Age
 sample_001,203546000006,R01C01,subj_001,203546000006_R01C01,1,34
 sample_002,203546000006,R02C01,subj_002,203546000006_R02C01,0,41
 sample_003,203546000006,R03C01,subj_003,203546000006_R03C01,1,29
@@ -265,6 +265,7 @@ The outputs meant for further analysis and sharing are collected in `data/Derive
 | `{study_name}_cell_composition_and_clocks.csv` | one row per sample: cell composition, PC clocks, SystemsAge, DunedinPACE and FraminghamPACE |
 | `{study_name}_sample_qc_filtering_decisions.csv` | for every sample: the checks it failed, which of them were used to remove it, and whether it was removed; all chunks together |
 | `{study_name}_sample_qc_pass_fail.csv` | for every sample: the result of every QC check; all chunks together |
+| `{study_name}_control_probe_pca_scores.csv` | the control-probe PCA scores of every sample (technical variation); calculated before samples are removed, so removed samples are included |
 
 ### Report
 
@@ -307,6 +308,7 @@ All figures are PDFs in `figures`, named `{study_name}_...`:
 - **QC metrics**: `{study_name}_sample_qc_metrics_chunk{chunk}.csv`
 - **QC pass/fail flags**: `{study_name}_sample_qc_pass_fail_chunk{chunk}.csv`
 - **Filtering decisions**: `{study_name}_sample_qc_filtering_decisions_chunk{chunk}.csv`
+- **Control-probe PCA (all chunks)**: `{study_name}_control_probe_pca_scores_all_chunks.csv`, `{study_name}_control_probe_pca_variance_all_chunks.csv` and `{study_name}_control_probe_pca_all_chunks.rds`
 - **Good-sample RGsets**: `{study_name}_RGset_good_samples_chunk{chunk}.rds`
 - **Noob-normalized GRsets**: `{study_name}_Noob_GRset_chunk{chunk}.rds`
 - **Downstream results per chunk**: one table per module, for example `{study_name}_PCClocks_noob_chunk{chunk}.csv`

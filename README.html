@@ -460,10 +460,14 @@ the config (<code>noob_downstream</code> and
 is missing for a result that is switched on, that module fails with a
 warning and the other modules still run.</li>
 <li><strong>Cell-count reference.</strong> The default is
-<code>FlowSorted.Blood.EPIC</code>. The extended reference needs
-restricted access; to use it, run
-<code>BiocManager::install(&quot;FlowSorted.BloodExtended.EPIC&quot;)</code> and
-set
+<code>FlowSorted.Blood.EPIC</code>. The extended reference (12 cell
+types) is restricted: it needs a licence agreement signed by an
+authorized representative of your institution (see the LICENSE on the
+package’s GitHub page,
+github.com/immunomethylomics/FlowSorted.BloodExtended.EPIC). To use it,
+install it with
+<code>remotes::install_github(&quot;immunomethylomics/FlowSorted.BloodExtended.EPIC&quot;)</code>
+and set
 <code>noob_downstream: cell_reference: FlowSorted.BloodExtended.EPIC</code>
 in the config.</li>
 </ul>
@@ -495,10 +499,10 @@ these columns:</p>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>Sample_ID</code></td>
-<td>your ID for the sample (for example the participant ID), shown next
-to the <code>IDATid</code> in the logs, the report and the output
-tables</td>
+<td><code>Sample_Name</code></td>
+<td>your name or ID for the sample (for example the participant ID),
+shown next to the <code>IDATid</code> in the logs, the report and the
+output tables</td>
 <td>required; put it in the first column</td>
 </tr>
 <tr class="even">
@@ -540,7 +544,7 @@ same value</td>
 names, because the clocks look for them. The other column names can be
 changed in the config (section <code>sample_sheet</code>).</p>
 <p>An example with three samples:</p>
-<pre class="text"><code>Sample_ID,Sentrix_ID,Sentrix_Position,SubjectID,IDATid,Female,Age
+<pre class="text"><code>Sample_Name,Sentrix_ID,Sentrix_Position,SubjectID,IDATid,Female,Age
 sample_001,203546000006,R01C01,subj_001,203546000006_R01C01,1,34
 sample_002,203546000006,R02C01,subj_002,203546000006_R02C01,0,41
 sample_003,203546000006,R03C01,subj_003,203546000006_R03C01,1,29</code></pre>
@@ -789,6 +793,12 @@ remove it, and whether it was removed; all chunks together</td>
 <td>for every sample: the result of every QC check; all chunks
 together</td>
 </tr>
+<tr class="odd">
+<td><code>{study_name}_control_probe_pca_scores.csv</code></td>
+<td>the control-probe PCA scores of every sample (technical variation);
+calculated before samples are removed, so removed samples are
+included</td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -893,6 +903,10 @@ the versions of R and the main packages.</li>
 <code>{study_name}_sample_qc_pass_fail_chunk{chunk}.csv</code></li>
 <li><strong>Filtering decisions</strong>:
 <code>{study_name}_sample_qc_filtering_decisions_chunk{chunk}.csv</code></li>
+<li><strong>Control-probe PCA (all chunks)</strong>:
+<code>{study_name}_control_probe_pca_scores_all_chunks.csv</code>,
+<code>{study_name}_control_probe_pca_variance_all_chunks.csv</code> and
+<code>{study_name}_control_probe_pca_all_chunks.rds</code></li>
 <li><strong>Good-sample RGsets</strong>:
 <code>{study_name}_RGset_good_samples_chunk{chunk}.rds</code></li>
 <li><strong>Noob-normalized GRsets</strong>:

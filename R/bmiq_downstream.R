@@ -595,6 +595,8 @@ run_downstream_summary <- function(config, chunks, suffix = "") {
   }
   # the sample QC tables of all chunks, in Derived_Variables (R/derived_variables.R)
   run_safely("Sample QC tables (all chunks)", export_qc_tables(config, chunks, suffix))
+  # the control-probe PCA scores, in Derived_Variables (R/derived_variables.R)
+  run_safely("Control-probe PCA scores", export_control_pca_scores(config, chunks, suffix))
   # the BMIQ beta and M value matrices, in Derived_Variables; switch off with bmiq_downstream: derived_matrices: false
   if (isTRUE(opts$derived_matrices %||% TRUE)) {
     run_safely("BMIQ beta and M value matrices (all chunks)", export_bmiq_matrices(config, chunks, suffix))

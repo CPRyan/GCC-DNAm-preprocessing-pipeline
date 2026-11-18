@@ -186,7 +186,7 @@ collect_report_numbers <- function(config, chunks) {
     fs <- fs[file.exists(fs)]
     if (length(fs)) do.call(rbind, lapply(fs, read_table_chr)) else NULL
   }, error = function(e) NULL)
-  pca_file <- file.path(config$paths$output_data, "control_probe_pca_scores_all_chunks.csv")
+  pca_file <- study_file(config, "control_probe_pca_scores_all_chunks", ext = "csv")
   pca <- if (file.exists(pca_file)) tryCatch(read_table_chr(pca_file), error = function(e) NULL) else NULL
   
   # ---- probes removed in all chunks, each counted once ----

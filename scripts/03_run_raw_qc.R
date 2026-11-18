@@ -47,8 +47,8 @@ if (is.null(ctrl_dir)) {
     message("  ", ncol(control_beta_all), " samples, ", control_pca$n_control_probes_used,
             " control probes, ", control_pca$n_pcs_to_threshold, " PCs to reach threshold")
     
-    utils::write.csv(control_pca$scores,   file.path(ctrl_dir, "control_probe_pca_scores_all_chunks.csv"),   row.names = FALSE)
-    utils::write.csv(control_pca$variance, file.path(ctrl_dir, "control_probe_pca_variance_all_chunks.csv"), row.names = FALSE)
-    saveRDS(control_pca$pca, file.path(ctrl_dir, "control_probe_pca_all_chunks.rds"))
+    utils::write.csv(control_pca$scores,   study_file(config, "control_probe_pca_scores_all_chunks",   ext = "csv"), row.names = FALSE)
+    utils::write.csv(control_pca$variance, study_file(config, "control_probe_pca_variance_all_chunks", ext = "csv"), row.names = FALSE)
+    saveRDS(control_pca$pca, study_file(config, "control_probe_pca_all_chunks", ext = "rds"))
   }
 }
