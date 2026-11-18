@@ -17,3 +17,5 @@ local_test_config.yml
 .DS_Store
 renv/library/
 renv/staging/
+*.qs2
+config/my_study.yml

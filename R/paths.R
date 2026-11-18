@@ -3,30 +3,11 @@ safe_study_name <- function(config) {
   gsub("[^A-Za-z0-9_]+", "_", study_name)
 }
 
-output_root <- function(config) {
-  config_path(config, config$paths$output_dir %||% "Output")
-}
-
+# The output folders are defined and created in config.R (load_config_from_cli()): the
+# user sets paths$output_dir, and paths$output_data, paths$output_figures and
+# paths$output_logs are derived from it (see OUTPUT_SUBDIRS).
 output_data_dir <- function(config) {
-  file.path(output_root(config), "data")
-}
-
-output_figure_dir <- function(config) {
-  file.path(output_root(config), "figures")
-}
-
-output_log_dir <- function(config) {
-  file.path(output_root(config), "logs")
-}
-
-ensure_output_dirs <- function(config) {
-  dirs <- c(output_root(config), output_data_dir(config), output_figure_dir(config), output_log_dir(config))
-  for (dir in dirs) {
-    if (!dir.exists(dir)) {
-      dir.create(dir, recursive = TRUE)
-    }
-  }
-  invisible(dirs)
+  config_path(config, config$paths$output_data)
 }
 
 study_file <- function(config, suffix, chunk = NULL, ext = NULL, dir = output_data_dir(config)) {
